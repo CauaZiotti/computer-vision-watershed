@@ -1,9 +1,11 @@
 import os
+import cv2
 
 class DatasetManager:
-    def __init__(self, directory="dataset", extensions=None):
+    def __init__(self, directory="dataset", extensions=None, max_dim=1280):
         self.directory = directory
         self.extensions = extensions or ('.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tiff')
+        self.max_dim = max_dim
         self.images = []
         self._current_idx = 0
         self.load_dataset()
@@ -41,6 +43,25 @@ class DatasetManager:
         if not filename:
             return None
         return os.path.join(self.directory, filename)
+        
+    def get_current_image(self):
+        filepath = self.get_current_image_path()
+        if not filepath:
+            return None
+
+        img = cv2.imread(filepath)
+        if img is None:
+            return None
+            
+        if self.max_dim:
+            h, w = img.shape[:2]
+            max_size = max(h, w)
+            if max_size > self.max_dim:
+                scale = self.max_dim / max_size
+                new_w = int(w * scale)
+                new_h = int(h * scale)
+                img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        return img
         
     def next_image(self):
         if not self.has_images:
