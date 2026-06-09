@@ -59,8 +59,6 @@ class DilationModel(BaseModel):
                 cY, cX = np.mean(c, axis=0)[0].astype(int)
                 
             cv2.circle(img_contour, (cX, cY), 3, (0, 255, 0), -1)
-            cv2.putText(img_contour, str(idx + 1), (cX - 8, cY - 8), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 1, cv2.LINE_AA)
             
         results['segmented_overlay'] = img_contour
         results['count'] = len(contours)

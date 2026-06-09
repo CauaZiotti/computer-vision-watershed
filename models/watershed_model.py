@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+# pyrefly: ignore [missing-import]
 from scipy import ndimage as ndi
 from skimage.feature import peak_local_max
 from skimage.segmentation import watershed
@@ -23,7 +24,7 @@ class WatershedModel(BaseModel):
             'erosion_iters': 1,
             'dilation_size': 0,
             'dilation_iters': 1,
-            'min_distance': 25,
+            'min_distance': 11,
         }
         
         self.display_modes = {
@@ -97,23 +98,26 @@ class WatershedModel(BaseModel):
         results['thresh_raw'] = thresh.copy()
         results['morphed'] = morphed
         
-        dist = cv2.distanceTransform(morphed, distanceType=cv2.DIST_L2, maskSize=3, dstType=cv2.CV_8U)
+        dist = cv2.distanceTransform(morphed, distanceType=cv2.DIST_L2, maskSize=5)
         dist_norm = cv2.normalize(dist, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-        results['dist_transform'] = dist_norm
+        
+        dist_smooth = cv2.GaussianBlur(dist_norm, (5, 5), 0)
+        
+        results['dist_transform'] = dist_smooth
         
         min_dist = self.params['min_distance']
         if min_dist < 1:
             min_dist = 1
             
-        local_maxi = peak_local_max(dist_norm, min_distance=min_dist, labels=morphed)
+        local_maxi = peak_local_max(dist_smooth, min_distance=min_dist, labels=morphed)
         
-        local_max = np.zeros_like(dist_norm, dtype=bool)
+        local_max = np.zeros_like(dist_smooth, dtype=bool)
         if len(local_maxi) > 0:
             local_max[tuple(local_maxi.T)] = True
             
         markers = ndi.label(local_max, structure=np.ones((3,3)))[0]
         
-        labels = watershed(-dist_norm, markers, mask=morphed)
+        labels = watershed(-dist, markers, mask=morphed)
         
         unique_labels = np.unique(labels)
         bean_count = len(unique_labels) - 1
@@ -148,8 +152,6 @@ class WatershedModel(BaseModel):
                     cY, cX = np.mean(coords, axis=0).astype(int)
                     
                 cv2.circle(overlay_outlines, (cX, cY), 3, (0, 0, 255), -1)
-                cv2.putText(overlay_outlines, str(label_val), (cX - 8, cY - 8), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 1, cv2.LINE_AA)
                             
         results['segmented_overlay'] = overlay_outlines
         

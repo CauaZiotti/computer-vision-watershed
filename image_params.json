@@ -1,0 +1,19 @@
+{
+    "img2.jpg": {
+        "WatershedModel": {
+            "min_distance": 15,
+            "manual_thresh": 120,
+            "blur_size": 9
+        },
+        "ErosionModel": {
+            "kernel_size": 5
+        }
+    },
+    "img3.jpg": {
+        "WatershedModel": {
+            "min_distance": 22,
+            "manual_thresh": 110,
+            "blur_size": 5
+        }
+    }
+}

@@ -247,34 +247,22 @@ class ViewerGUI:
 
     def draw_overlay(self, image, filename, idx, total, bean_count, current_mode_str, active_model_name):
         """Desenha uma barra informativa estilizada na parte inferior da imagem."""
-        if not self.show_overlay:
-            return image
-            
         img_copy = image.copy()
         h, w = img_copy.shape[:2]
         
-        banner_height = 50
-        overlay = img_copy.copy()
-        cv2.rectangle(overlay, (0, h - banner_height), (w, h), (15, 15, 15), -1)
+        # Contador no canto superior direito (Sempre visível)
+        counter_text = f"Feijoes: {bean_count}"
+        c_font_scale = 0.8
+        c_thickness = 2
+        (cw, ch), _ = cv2.getTextSize(counter_text, cv2.FONT_HERSHEY_SIMPLEX, c_font_scale, c_thickness)
         
-        alpha = 0.75
-        cv2.addWeighted(overlay, alpha, img_copy, 1 - alpha, 0, img_copy)
-        
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.43
-        text_color = (245, 245, 245)
-        thickness = 1
-        
-        info_text = f"[{idx+1}/{total}] {filename}  |  Modelo: {active_model_name}  |  Total Detectado: {bean_count}"
-        cv2.putText(img_copy, info_text, (15, h - 30), font, font_scale, text_color, thickness, cv2.LINE_AA)
-        
-        mode_text = f"Exibicao: {current_mode_str}"
-        cv2.putText(img_copy, mode_text, (15, h - 12), font, font_scale, (100, 200, 255), thickness, cv2.LINE_AA)
-        
-        help_text = "Teclas: A/D/Setas (Navegar) | 1:Watershed | 2:Erosao | 3:Dilatacao | H (Menu) | ESC (Sair)"
-        text_size = cv2.getTextSize(help_text, font, font_scale, thickness)[0]
-        cv2.putText(img_copy, help_text, (w - text_size[0] - 15, h - 20), font, font_scale, text_color, thickness, cv2.LINE_AA)
-        
+        pad = 15
+        # Fundo do contador
+        cv2.rectangle(img_copy, (w - cw - pad*2, 0), (w, ch + pad*2), (30, 30, 30), -1)
+        # Texto do contador
+        cv2.putText(img_copy, counter_text, (w - cw - pad, ch + pad), 
+                    cv2.FONT_HERSHEY_SIMPLEX, c_font_scale, (50, 255, 50), c_thickness, cv2.LINE_AA)
+                    
         return img_copy
 
     def show(self, image, title_info=""):

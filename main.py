@@ -1,9 +1,20 @@
 import os
 import cv2
 import sys
+import json
 from dataset_manager import DatasetManager
 from gui import ViewerGUI
 from models import WatershedModel, ErosionModel, DilationModel
+
+def apply_image_config(filename, model, image_configs):
+    """Aplica valores padrões específicos para a imagem, se existirem no JSON."""
+    if filename in image_configs:
+        cfg = image_configs[filename]
+        model_class_name = type(model).__name__
+        if model_class_name in cfg:
+            for k, v in cfg[model_class_name].items():
+                if k in model.params:
+                    model.params[k] = v
 
 def main():
     dataset_dir = "dataset"
@@ -25,10 +36,25 @@ def main():
     gui = ViewerGUI(main_window_name="Contador de Feijoes", control_window_name="Controles de Parametros")
     gui.create_windows()
     
+    config_file = "image_params.json"
+    image_configs = {}
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                image_configs = json.load(f)
+            print(f"[*] Configurações de imagens carregadas de {config_file}")
+        except Exception as e:
+            print(f"[-] Erro ao carregar {config_file}: {e}")
+            
+    # Apply initial config before setting up trackbars
+    initial_filename = db.get_current_filename()
+    if initial_filename:
+        apply_image_config(initial_filename, models[active_model_idx], image_configs)
+        
     gui.setup_trackbars(models[active_model_idx], active_model_idx)
     
     print("\n" + "="*70)
-    print("      SISTEMA MODULAR DE VISÃO COMPUTACIONAL - CONTAGEM DE FEIJÕES")
+    print("      SISTEMA DE VISÃO COMPUTACIONAL - CONTAGEM DE FEIJÕES")
     print("="*70)
     print(f"Dataset carregado: {db.total_images} imagens encontradas.")
     print("\nInstruções de Navegação (Mantenha o foco na janela principal):")
@@ -41,6 +67,7 @@ def main():
     
     current_results = None
     last_params_hash = None
+    last_filename = db.get_current_filename()
     
     while True:
         if last_params_hash is not None:
@@ -57,11 +84,17 @@ def main():
             db.next_image()
             continue
             
+        if filename != last_filename:
+            apply_image_config(filename, models[active_model_idx], image_configs)
+            gui.setup_trackbars(models[active_model_idx], active_model_idx)
+            last_filename = filename
+            
         selected_model_idx, display_mode = gui.update_params_from_trackbars(models[active_model_idx])
         
         if selected_model_idx != active_model_idx:
             print(f"[*] Modelo alterado via slider para: {model_names[selected_model_idx]}")
             active_model_idx = selected_model_idx
+            apply_image_config(filename, models[active_model_idx], image_configs)
             gui.setup_trackbars(models[active_model_idx], active_model_idx)
             continue
             
@@ -84,7 +117,18 @@ def main():
             
         display_img_resized, scale = gui.resize_to_fit(display_img)
         
-        gui.show(display_img_resized, f"[{idx+1}/{db.total_images}]")
+        current_mode_str = models[active_model_idx].display_modes.get(display_mode, str(display_mode))
+        display_img_with_overlay = gui.draw_overlay(
+            display_img_resized, 
+            filename, 
+            idx, 
+            db.total_images, 
+            bean_count, 
+            current_mode_str, 
+            model_names[active_model_idx]
+        )
+        
+        gui.show(display_img_with_overlay, f"[{idx+1}/{db.total_images}]")
         
         key_code = cv2.waitKeyEx(30)
         key = key_code & 0xFF
@@ -109,16 +153,19 @@ def main():
             if active_model_idx != 0:
                 print("[*] Modelo alterado via teclado para: Watershed")
                 active_model_idx = 0
+                apply_image_config(filename, models[active_model_idx], image_configs)
                 gui.setup_trackbars(models[active_model_idx], active_model_idx)
         elif key == ord('2'):
             if active_model_idx != 1:
                 print("[*] Modelo alterado via teclado para: Erosão")
                 active_model_idx = 1
+                apply_image_config(filename, models[active_model_idx], image_configs)
                 gui.setup_trackbars(models[active_model_idx], active_model_idx)
         elif key == ord('3'):
             if active_model_idx != 2:
                 print("[*] Modelo alterado via teclado para: Dilatação")
                 active_model_idx = 2
+                apply_image_config(filename, models[active_model_idx], image_configs)
                 gui.setup_trackbars(models[active_model_idx], active_model_idx)
             
     gui.close()
