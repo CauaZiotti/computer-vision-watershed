@@ -2,8 +2,8 @@ import os
 import cv2
 import sys
 import json
-from dataset_manager import DatasetManager
-from gui import ViewerGUI
+from utils.dataset_manager import DatasetManager
+from utils.gui import ViewerGUI
 from models import WatershedModel, ErosionModel, DilationModel
 
 def apply_image_config(filename, model, image_configs):

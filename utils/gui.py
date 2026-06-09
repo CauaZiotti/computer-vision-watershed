@@ -38,8 +38,7 @@ class ViewerGUI:
         self.tk_root.geometry(f"{tk_width}x{tk_height}+{x_pos}+{y_pos}")
         
         cv2.namedWindow(self.main_window, cv2.WINDOW_NORMAL)
-        # Ajusta o tamanho da janela do OpenCV proporcionalmente à tela
-        cv2.resizeWindow(self.main_window, int(self.screen_width * 0.65), int(self.screen_height * 0.8))
+
 
     def on_tk_close(self):
         self.tk_closed = True
