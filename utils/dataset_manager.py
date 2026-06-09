@@ -4,7 +4,7 @@ import cv2
 class DatasetManager:
     def __init__(self, directory="dataset", extensions=None, max_dim=1280):
         self.directory = directory
-        self.extensions = extensions or ('.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tiff')
+        self.extensions = extensions or ('.jpg', '.jpeg', '.png')
         self.max_dim = max_dim
         self.images = []
         self._current_idx = 0
