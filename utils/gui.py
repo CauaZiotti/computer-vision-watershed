@@ -1,15 +1,9 @@
 import cv2
-import numpy as np
 import tkinter as tk
 from tkinter import ttk
 
 class ViewerGUI:
-    """
-    Classe responsável pela Interface Gráfica usando OpenCV e Tkinter.
-    Gerencia as janelas, desenho de overlay semitransparente,
-    redimensionamento proporcional e controles via Tkinter para sintonia de parâmetros.
-    """
-    def __init__(self, main_window_name="Visualizador de Feijoes", control_window_name="Controle de Parametros"):
+    def __init__(self, main_window_name="Contador", control_window_name="Parametros"):
         self.main_window = main_window_name
         self.control_window_name = control_window_name
         self.show_overlay = True
@@ -21,7 +15,6 @@ class ViewerGUI:
         self.main_frame = None
         
     def create_windows(self):
-        """Cria e configura a janela OpenCV e a interface Tkinter."""
         self.tk_root = tk.Tk()
         self.tk_root.title(self.control_window_name)
         self.tk_root.protocol("WM_DELETE_WINDOW", self.on_tk_close)
@@ -38,8 +31,7 @@ class ViewerGUI:
         self.tk_root.geometry(f"{tk_width}x{tk_height}+{x_pos}+{y_pos}")
         
         cv2.namedWindow(self.main_window, cv2.WINDOW_NORMAL)
-        # Ajusta o tamanho da janela do OpenCV proporcionalmente à tela
-        cv2.resizeWindow(self.main_window, int(self.screen_width * 0.65), int(self.screen_height * 0.8))
+
 
     def on_tk_close(self):
         self.tk_closed = True
@@ -47,7 +39,6 @@ class ViewerGUI:
             self.tk_root.destroy()
 
     def is_open(self):
-        """Verifica se ambas as janelas (Tkinter e OpenCV) ainda estão abertas."""
         if self.tk_closed:
             return False
         try:
@@ -105,9 +96,6 @@ class ViewerGUI:
         chk.pack(side=tk.LEFT)
 
     def setup_trackbars(self, model, model_idx=0):
-        """
-        Cria os controles na interface Tkinter específicos para o modelo de segmentação ativo.
-        """
         if self.tk_root is None or self.tk_closed:
             return
             
@@ -181,9 +169,6 @@ class ViewerGUI:
         self.tk_root.update()
 
     def update_params_from_trackbars(self, model):
-        """
-        Lê os controles Tkinter e atualiza os parâmetros do modelo ativo.
-        """
         if self.tk_closed:
             return 0, 0
             
@@ -228,7 +213,6 @@ class ViewerGUI:
         return selected_model_idx, display_mode
 
     def resize_to_fit(self, image, max_width=None, max_height=None):
-        """Redimensiona proporcionalmente a imagem para caber na tela."""
         if max_width is None:
             max_width = int(self.screen_width * 0.70)
         if max_height is None:
@@ -246,11 +230,9 @@ class ViewerGUI:
         return image, 1.0
 
     def draw_overlay(self, image, filename, idx, total, bean_count, current_mode_str, active_model_name):
-        """Desenha uma barra informativa estilizada na parte inferior da imagem."""
         img_copy = image.copy()
         h, w = img_copy.shape[:2]
         
-        # Contador no canto superior direito (Sempre visível)
         counter_text = f"Feijoes: {bean_count}"
         c_font_scale = 0.8
         c_thickness = 2
@@ -266,13 +248,11 @@ class ViewerGUI:
         return img_copy
 
     def show(self, image, title_info=""):
-        """Exibe a imagem na janela principal."""
         title = f"{self.main_window} {title_info}"
         cv2.setWindowTitle(self.main_window, title)
         cv2.imshow(self.main_window, image)
 
     def close(self):
-        """Fecha todas as janelas gerenciadas pelo OpenCV e Tkinter."""
         self.tk_closed = True
         if self.tk_root:
             self.tk_root.destroy()
