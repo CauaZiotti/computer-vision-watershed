@@ -2,11 +2,7 @@ import cv2
 import numpy as np
 
 class BaseModel:
-    """
-    Classe base para todos os modelos de processamento e segmentação.
-    Define a interface padrão de parâmetros, execução e métodos utilitários
-    de processamento de imagem compartilhados entre as classes filhas.
-    """
+
     def __init__(self):
         self.params = {}
         self.display_modes = {}
@@ -21,11 +17,6 @@ class BaseModel:
         return self.params.get(name)
 
     def process(self, img):
-        """
-        Executa as etapas de visão computacional na imagem BGR fornecida.
-        Retorna um dicionário contendo os passos intermediários,
-        a imagem final de exibição e a contagem de objetos.
-        """
         raise NotImplementedError("Cada modelo de segmentação deve implementar o método process.")
 
     def to_gray(self, img):

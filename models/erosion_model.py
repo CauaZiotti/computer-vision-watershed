@@ -3,11 +3,7 @@ import numpy as np
 from models.base_model import BaseModel
 
 class ErosionModel(BaseModel):
-    """
-    Modelo de Segmentação por Erosão.
-    Adequado para imagens de grãos que possuem ruídos de fundo e que podem
-    ser separados simplesmente aplicando binarização adaptativa seguida de erosão morfológica.
-    """
+
     def __init__(self):
         super().__init__()
         self.params = {
@@ -23,9 +19,9 @@ class ErosionModel(BaseModel):
         self.display_modes = {
             0: "1. Imagem Original",
             1: "2. Tons de Cinza",
-            2: "3. Limiarizada (Binarizada)",
+            2: "3. Limiarizada",
             3: "4. Mascara com Erosao",
-            4: "5. Resultado Final (Contornos)"
+            4: "5. Resultado Final"
         }
 
     def process(self, img):

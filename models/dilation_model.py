@@ -3,11 +3,7 @@ import numpy as np
 from models.base_model import BaseModel
 
 class DilationModel(BaseModel):
-    """
-    Modelo de Segmentação por Dilatação.
-    Adequado para preencher falhas de binarização expandindo as regiões brancas
-    dos objetos antes de detectar contornos externos (ex: moedas com texturas complexas).
-    """
+
     def __init__(self):
         super().__init__()
         self.params = {
@@ -20,9 +16,9 @@ class DilationModel(BaseModel):
         self.display_modes = {
             0: "1. Imagem Original",
             1: "2. Tons de Cinza",
-            2: "3. Limiarizada (Binarizada)",
+            2: "3. Limiarizada",
             3: "4. Mascara Dilatada",
-            4: "5. Resultado Final (Contornos)"
+            4: "5. Resultado Final"
         }
 
     def process(self, img):

@@ -7,11 +7,7 @@ from skimage import color
 from models.base_model import BaseModel
 
 class WatershedModel(BaseModel):
-    """
-    Modelo de Segmentação por Watershed.
-    Ideal para separar objetos de mesma classe que estejam se tocando (ex: feijões aglomerados).
-    Pode reutilizar os pipelines do Modelo de Erosão ou Dilatação para gerar sua máscara binária de entrada.
-    """
+
     def __init__(self):
         super().__init__()
         self.params = {
@@ -33,10 +29,10 @@ class WatershedModel(BaseModel):
         self.display_modes = {
             0: "1. Imagem Original",
             1: "2. Suavizada/Filtrada",
-            2: "3. Mascara de Entrada (Morphed)",
+            2: "3. Mascara de Entrada",
             3: "4. Transformada de Distancia",
             4: "5. Rotulos Watershed",
-            5: "6. Resultado Final (Contornos)"
+            5: "6. Resultado Final"
         }
 
     def process(self, img):
