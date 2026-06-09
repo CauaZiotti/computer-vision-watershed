@@ -44,8 +44,7 @@ def main():
     
     while True:
         if last_params_hash is not None:
-            if cv2.getWindowProperty(gui.main_window, cv2.WND_PROP_VISIBLE) < 1 or \
-               cv2.getWindowProperty(gui.control_window, cv2.WND_PROP_VISIBLE) < 1:
+            if not gui.is_open():
                 print("[*] Janela de exibição ou controle fechada pelo usuário. Encerrando o sistema...")
                 break
 
@@ -83,7 +82,7 @@ def main():
         if len(display_img.shape) == 2:
             display_img = cv2.cvtColor(display_img, cv2.COLOR_GRAY2BGR)
             
-        display_img_resized, scale = gui.resize_to_fit(display_img, max_width=1280, max_height=720)
+        display_img_resized, scale = gui.resize_to_fit(display_img)
         
         gui.show(display_img_resized, f"[{idx+1}/{db.total_images}]")
         

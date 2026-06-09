@@ -1,164 +1,239 @@
 import cv2
 import numpy as np
+import tkinter as tk
+from tkinter import ttk
 
 class ViewerGUI:
     """
-    Classe responsável pela Interface Gráfica usando OpenCV.
+    Classe responsável pela Interface Gráfica usando OpenCV e Tkinter.
     Gerencia as janelas, desenho de overlay semitransparente,
-    redimensionamento e sliders (trackbars) para sintonia de parâmetros de cada modelo.
+    redimensionamento proporcional e controles via Tkinter para sintonia de parâmetros.
     """
     def __init__(self, main_window_name="Visualizador de Feijoes", control_window_name="Controle de Parametros"):
         self.main_window = main_window_name
-        self.control_window = control_window_name
+        self.control_window_name = control_window_name
         self.show_overlay = True
+        self.tk_root = None
+        self.tk_closed = False
+        self.vars = {}
+        self.screen_width = 1280
+        self.screen_height = 720
+        self.main_frame = None
         
     def create_windows(self):
-        """Cria e configura as janelas do OpenCV."""
-        cv2.namedWindow(self.main_window, cv2.WINDOW_NORMAL)
-        cv2.namedWindow(self.control_window, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(self.control_window, 600, 520)
+        """Cria e configura a janela OpenCV e a interface Tkinter."""
+        self.tk_root = tk.Tk()
+        self.tk_root.title(self.control_window_name)
+        self.tk_root.protocol("WM_DELETE_WINDOW", self.on_tk_close)
         
-        header = np.zeros((60, 600, 3), dtype=np.uint8)
-        header[:] = (30, 30, 30)
-        cv2.putText(header, "Painel de Controle", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 200, 255), 1, cv2.LINE_AA)
-        cv2.putText(header, "Ajuste os valores para sintonizar a contagem", (15, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (180, 180, 180), 1, cv2.LINE_AA)
-        cv2.imshow(self.control_window, header)
+        # Pega a resolução da tela
+        self.screen_width = self.tk_root.winfo_screenwidth()
+        self.screen_height = self.tk_root.winfo_screenheight()
+        
+        # Posiciona a janela de controle do lado direito
+        tk_width = 450
+        tk_height = 650
+        x_pos = self.screen_width - tk_width - 20
+        y_pos = 50
+        self.tk_root.geometry(f"{tk_width}x{tk_height}+{x_pos}+{y_pos}")
+        
+        cv2.namedWindow(self.main_window, cv2.WINDOW_NORMAL)
+        # Ajusta o tamanho da janela do OpenCV proporcionalmente à tela
+        cv2.resizeWindow(self.main_window, int(self.screen_width * 0.65), int(self.screen_height * 0.8))
 
-    def _dummy_callback(self, val):
-        """Callback vazio obrigatório para a criação de trackbars."""
-        pass
+    def on_tk_close(self):
+        self.tk_closed = True
+        if self.tk_root:
+            self.tk_root.destroy()
+
+    def is_open(self):
+        """Verifica se ambas as janelas (Tkinter e OpenCV) ainda estão abertas."""
+        if self.tk_closed:
+            return False
+        try:
+            if cv2.getWindowProperty(self.main_window, cv2.WND_PROP_VISIBLE) < 1:
+                return False
+        except cv2.error:
+            return False
+        return True
+
+    def _create_slider(self, parent, label_text, var_name, from_, to, initial):
+        frame = ttk.Frame(parent)
+        frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        lbl = ttk.Label(frame, text=label_text, width=15)
+        lbl.pack(side=tk.LEFT)
+        
+        val_lbl = ttk.Label(frame, text=str(initial), width=4)
+        val_lbl.pack(side=tk.RIGHT)
+        
+        var = tk.IntVar(value=initial)
+        self.vars[var_name] = var
+        
+        def update_val(val):
+            val_lbl.config(text=str(int(float(val))))
+            
+        scale = ttk.Scale(frame, from_=from_, to=to, variable=var, orient=tk.HORIZONTAL, command=update_val)
+        scale.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+    def _create_combobox(self, parent, label_text, var_name, values, initial_idx=0):
+        frame = ttk.Frame(parent)
+        frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        lbl = ttk.Label(frame, text=label_text, width=15)
+        lbl.pack(side=tk.LEFT)
+        
+        var = tk.IntVar(value=initial_idx)
+        self.vars[var_name] = var
+        
+        def on_select(event):
+            var.set(combo.current())
+            
+        combo = ttk.Combobox(frame, values=values, state="readonly")
+        combo.current(initial_idx)
+        combo.bind("<<ComboboxSelected>>", on_select)
+        combo.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+    def _create_checkbox(self, parent, label_text, var_name, initial):
+        frame = ttk.Frame(parent)
+        frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        var = tk.IntVar(value=1 if initial else 0)
+        self.vars[var_name] = var
+        
+        chk = ttk.Checkbutton(frame, text=label_text, variable=var)
+        chk.pack(side=tk.LEFT)
 
     def setup_trackbars(self, model, model_idx=0):
         """
-        Cria os controles deslizantes específicos para o modelo de segmentação ativo.
-        Limpa controles antigos destruindo e recriando a janela.
+        Cria os controles na interface Tkinter específicos para o modelo de segmentação ativo.
         """
-        try:
-            cv2.destroyWindow(self.control_window)
-        except cv2.error:
-            pass
+        if self.tk_root is None or self.tk_closed:
+            return
             
-        cv2.namedWindow(self.control_window, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(self.control_window, 600, 520)
+        if self.main_frame is not None:
+            self.main_frame.destroy()
+            
+        self.vars.clear()
         
-        header = np.zeros((60, 600, 3), dtype=np.uint8)
-        header[:] = (30, 30, 30)
-        cv2.putText(header, "Painel de Controle", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 200, 255), 1, cv2.LINE_AA)
-        cv2.putText(header, "Ajuste os valores para sintonizar a contagem", (15, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (180, 180, 180), 1, cv2.LINE_AA)
-        cv2.imshow(self.control_window, header)
+        self.main_frame = ttk.Frame(self.tk_root)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
         
-        cv2.createTrackbar("Modelo", self.control_window, model_idx, 2, self._dummy_callback)
+        lbl_title = ttk.Label(self.main_frame, text="Painel de Controle", font=("Helvetica", 14, "bold"))
+        lbl_title.pack(pady=(10, 0))
+        
+        lbl_sub = ttk.Label(self.main_frame, text="Ajuste os valores para sintonizar a contagem")
+        lbl_sub.pack(pady=(0, 10))
+        
+        models_list = ["Watershed", "Erosão", "Dilatação"]
+        self._create_combobox(self.main_frame, "Modelo", "Modelo", models_list, model_idx)
         
         max_mode = len(model.display_modes) - 1
-        cv2.createTrackbar("Exibir", self.control_window, max_mode, max_mode, self._dummy_callback)
+        display_modes_list = [f"Modo {i} - {model.display_modes[i]}" for i in range(max_mode + 1)]
+        self._create_combobox(self.main_frame, "Exibir", "Exibir", display_modes_list, max_mode)
+        
+        ttk.Separator(self.main_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=10, padx=10)
         
         from models.watershed_model import WatershedModel
         from models.erosion_model import ErosionModel
         from models.dilation_model import DilationModel
         
         if isinstance(model, WatershedModel):
-            cv2.createTrackbar("Mascara", self.control_window, model.params['mask_source'], 2, self._dummy_callback)
-            cv2.createTrackbar("Filtro", self.control_window, model.params['filter_type'], 2, self._dummy_callback)
+            self._create_combobox(self.main_frame, "Mascara", "Mascara", ["0", "1", "2"], model.params['mask_source'])
+            self._create_combobox(self.main_frame, "Filtro", "Filtro", ["0", "1", "2"], model.params['filter_type'])
             
             initial_blur = (model.params['blur_size'] - 1) // 2
-            cv2.createTrackbar("Blur", self.control_window, initial_blur, 15, self._dummy_callback)
+            self._create_slider(self.main_frame, "Blur", "Blur", 0, 15, initial_blur)
             
-            cv2.createTrackbar("Otsu", self.control_window, 1 if model.params['use_otsu'] else 0, 1, self._dummy_callback)
-            cv2.createTrackbar("Limiar", self.control_window, model.params['manual_thresh'], 255, self._dummy_callback)
+            self._create_checkbox(self.main_frame, "Otsu", "Otsu", model.params['use_otsu'])
+            self._create_slider(self.main_frame, "Limiar", "Limiar", 0, 255, model.params['manual_thresh'])
             
             initial_fill = model.params['fill_holes_area'] // 50
-            cv2.createTrackbar("Buracos", self.control_window, initial_fill, 100, self._dummy_callback)
+            self._create_slider(self.main_frame, "Buracos", "Buracos", 0, 100, initial_fill)
             
-            cv2.createTrackbar("Erosao Sz", self.control_window, model.params['erosion_size'], 15, self._dummy_callback)
-            cv2.createTrackbar("Erosao It", self.control_window, model.params['erosion_iters'], 10, self._dummy_callback)
-            cv2.createTrackbar("Dilat Sz", self.control_window, model.params['dilation_size'], 15, self._dummy_callback)
-            cv2.createTrackbar("Dilat It", self.control_window, model.params['dilation_iters'], 10, self._dummy_callback)
-            cv2.createTrackbar("Dist Min", self.control_window, model.params['min_distance'], 100, self._dummy_callback)
+            self._create_slider(self.main_frame, "Erosao Sz", "Erosao Sz", 0, 15, model.params['erosion_size'])
+            self._create_slider(self.main_frame, "Erosao It", "Erosao It", 0, 10, model.params['erosion_iters'])
+            self._create_slider(self.main_frame, "Dilat Sz", "Dilat Sz", 0, 15, model.params['dilation_size'])
+            self._create_slider(self.main_frame, "Dilat It", "Dilat It", 0, 10, model.params['dilation_iters'])
+            self._create_slider(self.main_frame, "Dist Min", "Dist Min", 0, 100, model.params['min_distance'])
             
         elif isinstance(model, ErosionModel):
-            cv2.createTrackbar("Adapt.", self.control_window, 1 if model.params['use_adaptive'] else 0, 1, self._dummy_callback)
+            self._create_checkbox(self.main_frame, "Adaptativo", "Adapt.", model.params['use_adaptive'])
             
             initial_block = (model.params['block_size'] - 3) // 2
-            cv2.createTrackbar("Bloco", self.control_window, initial_block, 49, self._dummy_callback)
+            self._create_slider(self.main_frame, "Bloco", "Bloco", 0, 49, initial_block)
             
-            cv2.createTrackbar("Const. C", self.control_window, model.params['c_val'], 100, self._dummy_callback)
+            self._create_slider(self.main_frame, "Const. C", "Const. C", 0, 100, model.params['c_val'])
             
-            cv2.createTrackbar("Otsu", self.control_window, 1 if model.params['use_otsu'] else 0, 1, self._dummy_callback)
-            cv2.createTrackbar("Limiar", self.control_window, model.params['manual_thresh'], 255, self._dummy_callback)
+            self._create_checkbox(self.main_frame, "Otsu", "Otsu", model.params['use_otsu'])
+            self._create_slider(self.main_frame, "Limiar", "Limiar", 0, 255, model.params['manual_thresh'])
             
-            cv2.createTrackbar("Erosao Sz", self.control_window, model.params['kernel_size'], 15, self._dummy_callback)
-            cv2.createTrackbar("Erosao It", self.control_window, model.params['erosion_iters'], 10, self._dummy_callback)
+            self._create_slider(self.main_frame, "Erosao Sz", "Erosao Sz", 0, 15, model.params['kernel_size'])
+            self._create_slider(self.main_frame, "Erosao It", "Erosao It", 0, 10, model.params['erosion_iters'])
             
         elif isinstance(model, DilationModel):
-            cv2.createTrackbar("Otsu", self.control_window, 1 if model.params['use_otsu'] else 0, 1, self._dummy_callback)
-            cv2.createTrackbar("Limiar", self.control_window, model.params['manual_thresh'], 255, self._dummy_callback)
+            self._create_checkbox(self.main_frame, "Otsu", "Otsu", model.params['use_otsu'])
+            self._create_slider(self.main_frame, "Limiar", "Limiar", 0, 255, model.params['manual_thresh'])
             
-            cv2.createTrackbar("Dilat Sz", self.control_window, model.params['kernel_size'], 15, self._dummy_callback)
-            cv2.createTrackbar("Dilat It", self.control_window, model.params['dilation_iters'], 10, self._dummy_callback)
+            self._create_slider(self.main_frame, "Dilat Sz", "Dilat Sz", 0, 15, model.params['kernel_size'])
+            self._create_slider(self.main_frame, "Dilat It", "Dilat It", 0, 10, model.params['dilation_iters'])
+            
+        self.tk_root.update()
 
     def update_params_from_trackbars(self, model):
         """
-        Lê a posição dos sliders e atualiza os parâmetros do modelo ativo.
-        Retorna uma tupla contendo (modelo_selecionado_idx, modo_exibicao_ativo).
+        Lê os controles Tkinter e atualiza os parâmetros do modelo ativo.
         """
-        selected_model_idx = cv2.getTrackbarPos("Modelo", self.control_window)
-        display_mode = cv2.getTrackbarPos("Exibir", self.control_window)
+        if self.tk_closed:
+            return 0, 0
+            
+        # Atualiza eventos do Tkinter
+        self.tk_root.update()
         
-        if selected_model_idx < 0: selected_model_idx = 0
-        if display_mode < 0: display_mode = 0
+        selected_model_idx = self.vars["Modelo"].get() if "Modelo" in self.vars else 0
+        display_mode = self.vars["Exibir"].get() if "Exibir" in self.vars else 0
         
         from models.watershed_model import WatershedModel
         from models.erosion_model import ErosionModel
         from models.dilation_model import DilationModel
         
         if isinstance(model, WatershedModel):
-            model.set_param('mask_source', cv2.getTrackbarPos("Mascara", self.control_window))
-            model.set_param('filter_type', cv2.getTrackbarPos("Filtro", self.control_window))
-            
-            blur_slider = cv2.getTrackbarPos("Blur", self.control_window)
-            model.set_param('blur_size', (blur_slider * 2) + 1)
-            
-            use_otsu = cv2.getTrackbarPos("Otsu", self.control_window) == 1
-            model.set_param('use_otsu', use_otsu)
-            model.set_param('manual_thresh', cv2.getTrackbarPos("Limiar", self.control_window))
-            
-            fill_slider = cv2.getTrackbarPos("Buracos", self.control_window)
-            model.set_param('fill_holes_area', fill_slider * 50)
-            
-            model.set_param('erosion_size', cv2.getTrackbarPos("Erosao Sz", self.control_window))
-            model.set_param('erosion_iters', max(1, cv2.getTrackbarPos("Erosao It", self.control_window)))
-            model.set_param('dilation_size', cv2.getTrackbarPos("Dilat Sz", self.control_window))
-            model.set_param('dilation_iters', max(1, cv2.getTrackbarPos("Dilat It", self.control_window)))
-            model.set_param('min_distance', cv2.getTrackbarPos("Dist Min", self.control_window))
+            if "Mascara" in self.vars: model.set_param('mask_source', self.vars["Mascara"].get())
+            if "Filtro" in self.vars: model.set_param('filter_type', self.vars["Filtro"].get())
+            if "Blur" in self.vars: model.set_param('blur_size', (self.vars["Blur"].get() * 2) + 1)
+            if "Otsu" in self.vars: model.set_param('use_otsu', self.vars["Otsu"].get() == 1)
+            if "Limiar" in self.vars: model.set_param('manual_thresh', self.vars["Limiar"].get())
+            if "Buracos" in self.vars: model.set_param('fill_holes_area', self.vars["Buracos"].get() * 50)
+            if "Erosao Sz" in self.vars: model.set_param('erosion_size', self.vars["Erosao Sz"].get())
+            if "Erosao It" in self.vars: model.set_param('erosion_iters', max(1, self.vars["Erosao It"].get()))
+            if "Dilat Sz" in self.vars: model.set_param('dilation_size', self.vars["Dilat Sz"].get())
+            if "Dilat It" in self.vars: model.set_param('dilation_iters', max(1, self.vars["Dilat It"].get()))
+            if "Dist Min" in self.vars: model.set_param('min_distance', self.vars["Dist Min"].get())
             
         elif isinstance(model, ErosionModel):
-            use_adaptive = cv2.getTrackbarPos("Adapt.", self.control_window) == 1
-            model.set_param('use_adaptive', use_adaptive)
-            
-            block_slider = cv2.getTrackbarPos("Bloco", self.control_window)
-            model.set_param('block_size', (block_slider * 2) + 3)
-            
-            model.set_param('c_val', cv2.getTrackbarPos("Const. C", self.control_window))
-            
-            use_otsu = cv2.getTrackbarPos("Otsu", self.control_window) == 1
-            model.set_param('use_otsu', use_otsu)
-            model.set_param('manual_thresh', cv2.getTrackbarPos("Limiar", self.control_window))
-            
-            model.set_param('kernel_size', cv2.getTrackbarPos("Erosao Sz", self.control_window))
-            model.set_param('erosion_iters', max(1, cv2.getTrackbarPos("Erosao It", self.control_window)))
+            if "Adapt." in self.vars: model.set_param('use_adaptive', self.vars["Adapt."].get() == 1)
+            if "Bloco" in self.vars: model.set_param('block_size', (self.vars["Bloco"].get() * 2) + 3)
+            if "Const. C" in self.vars: model.set_param('c_val', self.vars["Const. C"].get())
+            if "Otsu" in self.vars: model.set_param('use_otsu', self.vars["Otsu"].get() == 1)
+            if "Limiar" in self.vars: model.set_param('manual_thresh', self.vars["Limiar"].get())
+            if "Erosao Sz" in self.vars: model.set_param('kernel_size', self.vars["Erosao Sz"].get())
+            if "Erosao It" in self.vars: model.set_param('erosion_iters', max(1, self.vars["Erosao It"].get()))
             
         elif isinstance(model, DilationModel):
-            use_otsu = cv2.getTrackbarPos("Otsu", self.control_window) == 1
-            model.set_param('use_otsu', use_otsu)
-            model.set_param('manual_thresh', cv2.getTrackbarPos("Limiar", self.control_window))
-            
-            model.set_param('kernel_size', cv2.getTrackbarPos("Dilat Sz", self.control_window))
-            model.set_param('dilation_iters', max(1, cv2.getTrackbarPos("Dilat It", self.control_window)))
+            if "Otsu" in self.vars: model.set_param('use_otsu', self.vars["Otsu"].get() == 1)
+            if "Limiar" in self.vars: model.set_param('manual_thresh', self.vars["Limiar"].get())
+            if "Dilat Sz" in self.vars: model.set_param('kernel_size', self.vars["Dilat Sz"].get())
+            if "Dilat It" in self.vars: model.set_param('dilation_iters', max(1, self.vars["Dilat It"].get()))
             
         return selected_model_idx, display_mode
 
-    def resize_to_fit(self, image, max_width=1280, max_height=720):
-        """Redimensiona proporcionalmente a imagem para caber nos limites definidos."""
+    def resize_to_fit(self, image, max_width=None, max_height=None):
+        """Redimensiona proporcionalmente a imagem para caber na tela."""
+        if max_width is None:
+            max_width = int(self.screen_width * 0.70)
+        if max_height is None:
+            max_height = int(self.screen_height * 0.85)
+            
         h, w = image.shape[:2]
         scale_w = max_width / w
         scale_h = max_height / h
@@ -209,5 +284,9 @@ class ViewerGUI:
         cv2.imshow(self.main_window, image)
 
     def close(self):
-        """Fecha todas as janelas gerenciadas pelo OpenCV."""
+        """Fecha todas as janelas gerenciadas pelo OpenCV e Tkinter."""
+        self.tk_closed = True
+        if self.tk_root:
+            self.tk_root.destroy()
         cv2.destroyAllWindows()
+
