@@ -29,3 +29,18 @@ Principais Etapas do Processamento
 
 Imagens intermediárias
 
+achar uma forma de adicionar as imagens
+
+Resultados obtidos
+
+    Nas imagens 1 e 4 temos um cenário mais simples, com os feijões mais espalhados. Isso possibilitou o uso de erosão em conjunto com Otsu
+para binzarizar e aplicando um Kernel Size pequeno (ex: 3 ou 5) com 1 iteração de erosão, soltamos os feijões com facilidade. 
+    Nas imagens 6 e 8 ficou mais complexo, muitos feijões próximos e aglomerados, o que dificultou o processo. Foi preciso usar watershed e
+a transformada de distância para achar os "picos". Ajustando o parâmetro "min_distance" no Tkinter para um valor médio (entre 10 e 15), o sisema consegue identificar a meioria dos feijões com isso, porém fica um emaranhado de linhas verdes.
+    Por fim, no restante das imagens temos aglomerados pequenos, reflexos de luz e desafios mais medianos. Para solucionar isso, aplicamos a
+função "apply_hole_filling", ela é responsável por tapar buracos brancos de forma matemática, o que ajuda a eliminar falsos positivos da contagem, o que faz com que o feijão com reflexo vale por apenas 1 unidade. 
+
+Análise das limitações e dificuldades encontradas
+
+    Com relação as limitações e dificuldades, em imagens com feijões muito próximos uns dos outros, observamos que os algortimos tiveram uma
+grande dificuldade para selecionar os indíviduos de forma separada. Mesmo com diversas parametrizações não foi possível alcançar um resultado satisfatório nessa imagem (img6.jpg). Após pesquisas e debates, chegamos a conclusão de que o mesmo ocorreu desta forma pois a imagem apresenta feijões sobrepostos e mesmo com técnicas de erosão não foi possível separá-los a um ponto de deixar identificável pelo algortimo.
