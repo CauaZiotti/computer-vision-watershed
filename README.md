@@ -29,7 +29,12 @@ Principais Etapas do Processamento
 
 Imagens intermediárias
 
-achar uma forma de adicionar as imagens
+![Imagem original](https://raw.githubusercontent.com/CauaZiotti/computer-vision-watershed/refs/heads/main/img_readme/image.png)
+![Imagem filtrada](https://raw.githubusercontent.com/CauaZiotti/computer-vision-watershed/refs/heads/main/img_readme/image-1.png)
+![Imagem binarizada](https://raw.githubusercontent.com/CauaZiotti/computer-vision-watershed/refs/heads/main/img_readme/image-2.png)
+![Imagem transformada de distância](https://raw.githubusercontent.com/CauaZiotti/computer-vision-watershed/refs/heads/main/img_readme/image-3.png)
+![Imagem rótulos de watershed](https://raw.githubusercontent.com/CauaZiotti/computer-vision-watershed/refs/heads/main/img_readme/image-4.png)
+![Imagem resultado final](https://raw.githubusercontent.com/CauaZiotti/computer-vision-watershed/refs/heads/main/img_readme/image-5.png)
 
 Resultados obtidos
 
