@@ -1,0 +1,18 @@
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.image-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.image-row img {
+  width: calc(50% - 10px);
+  max-width: 300px;
+}
